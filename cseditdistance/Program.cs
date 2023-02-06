@@ -18,7 +18,17 @@ int result = 0;
 
 //result = LevenshteinDistance.Calculate(text1, text2);
 
-//Console.WriteLine($"Calculation : text1 = {text1} , text2 = {text2} : Return value = {result}");
+//Console.WriteLine($"Calculation : text1 = {text1} , text2 = {text2} :
+//Return value = {result}");
+result = r.Calculate("มกราคม", "มกรคม");
+result = r.Calculate("มกราคม", "มกคม");
+
+result = r.Calculate("กุมถาพันธ์", "มกรคม");
+result = r.Calculate("มีนาคม", "มกรคม");
+
+result = r.Calculate("ABBYY", "ABBY");
+result = r.Calculate("HONDA", "HONDO");
+
 result = r.Calculate("ABBYYYY", "ABBY");
 result = r.Calculate("hospital", "haspita");
 result = r.Calculate("haspita", "hospital");
