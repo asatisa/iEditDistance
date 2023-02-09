@@ -39,7 +39,7 @@ const app_version string = "0.3"
 
 // Variable of Application
 var i_count int = 0
-var percent float32
+var result_percent float32
 
 var version = []mappingValue{
 	{KEY: "Version", Value: app_version},
@@ -167,7 +167,7 @@ func runTestDistance() {
 }
 
 func Calculate(source1 string, source2 string) int {
-	var return_int int = 0
+	var result_run int = 0
 	var source1Length int
 	var source2Length int
 	var maxLength int = 0
@@ -180,15 +180,15 @@ func Calculate(source1 string, source2 string) int {
 		maxLength = source2Length
 	}
 
-	percent = 0
-	return_int = levenshtein.ComputeDistance(source1, source2)
+	result_percent = 0
+	result_run = levenshtein.ComputeDistance(source1, source2)
 
-	percent = ToFloat32(maxLength-return_int) / ToFloat32(maxLength) * 100
+	result_percent = ToFloat32(maxLength-result_run) / ToFloat32(maxLength) * 100
 
-	fmt.Println(i_count, " : Result = ", return_int, ", ", maxLength, ", ", percent, " % #")
+	fmt.Println(i_count, " : Result = ", result_run, ", ", maxLength, ", ", result_percent, " % #")
 	//fmt.Printf("%d : Result = %d, %d, %f %% #", i_count, return_int, maxLength, percent)
 
-	return return_int
+	return result_run
 }
 
 // //////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -198,7 +198,8 @@ func main() {
 	var return_path string
 
 	return_path = getExecDir()
-	fmt.Println("Application Version: " + app_version)
+	fmt.Println("Auto Correct API")
+	fmt.Println("Version: " + app_version)
 	fmt.Println("Execution Path: " + return_path)
 
 	var api_server_ipaddress string = readINI("server", "api_server_ipaddress")
