@@ -20,6 +20,7 @@ int result = 0;
 
 //Console.WriteLine($"Calculation : text1 = {text1} , text2 = {text2} :
 //Return value = {result}");
+result = r.Calculate("kitten", "sitting");
 result = r.Calculate("มกราคม", "มกรคม");
 result = r.Calculate("มกราคม", "มกคม");
 
