@@ -116,7 +116,7 @@ func postDistanceCorrect(c *gin.Context) {
 	s1 := "kitten"
 	s2 := "sitting"
 
-	resultval = Calculate(newInput.Data, "sitting")
+	resultval = Calculate("kitten", newInput.Data)
 
 	fmt.Println("postDistanceCorrect: ", s1, ", ", s2, ", ", resultval)
 

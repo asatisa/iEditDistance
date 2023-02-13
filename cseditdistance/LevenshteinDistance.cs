@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Diagnostics;
+
 
 namespace cseditdistance
 {
@@ -48,6 +50,7 @@ namespace cseditdistance
               matrix[i - 1, j - 1] + cost);
         }
       }
+      Debug.WriteLine("My text");
       // return result
       return matrix[source1Length, source2Length];
     }
