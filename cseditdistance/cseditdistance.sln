@@ -3,7 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.3.32811.315
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cseditdistance", "cseditdistance.csproj", "{18A8CB47-C40A-445C-ABA5-2355ACCD8642}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "cseditdistance", "cseditdistance.csproj", "{18A8CB47-C40A-445C-ABA5-2355ACCD8642}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RequestAPI", "..\..\..\OCRAutoCorrect\Script\req_ws\RequestAPI.csproj", "{57E5C510-F4AB-4D95-9D52-BBA95794F681}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ArrayExample", "..\..\..\..\..\..\OneDrive\1.dev.practice\dev_c#\ArrayExample\ArrayExample.csproj", "{994EC92C-928B-4BAE-9D84-C270E4875A88}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +19,14 @@ Global
 		{18A8CB47-C40A-445C-ABA5-2355ACCD8642}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{18A8CB47-C40A-445C-ABA5-2355ACCD8642}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{18A8CB47-C40A-445C-ABA5-2355ACCD8642}.Release|Any CPU.Build.0 = Release|Any CPU
+		{57E5C510-F4AB-4D95-9D52-BBA95794F681}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{57E5C510-F4AB-4D95-9D52-BBA95794F681}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{57E5C510-F4AB-4D95-9D52-BBA95794F681}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{57E5C510-F4AB-4D95-9D52-BBA95794F681}.Release|Any CPU.Build.0 = Release|Any CPU
+		{994EC92C-928B-4BAE-9D84-C270E4875A88}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{994EC92C-928B-4BAE-9D84-C270E4875A88}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{994EC92C-928B-4BAE-9D84-C270E4875A88}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{994EC92C-928B-4BAE-9D84-C270E4875A88}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

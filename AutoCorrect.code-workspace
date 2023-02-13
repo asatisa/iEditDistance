@@ -1,7 +1,16 @@
 {
 	"folders": [
 		{
-			"path": "AutoCorrect"
+			"path": "..\\..\\dev_go\\web-service-gin"
+		},
+		{
+			"path": "..\\..\\dev_go\\REST-API"
+		},
+		{
+			"path": "..\\..\\dev_go\\hello"
+		},
+		{
+			"path": "AutoCorrectAPI"
 		}
 	],
 	"settings": {}
