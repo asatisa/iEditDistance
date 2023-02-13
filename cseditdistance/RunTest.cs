@@ -46,9 +46,9 @@ namespace cseditdistance
       return_int = LevenshteinDistance.Calculate(source1, source2);
       percent = ((float)maxLength - (float)return_int) / (float)maxLength * 100F;
 
-      //Console.WriteLine($"{i_count} : Result = {return_int}, {maxLength}, {percent}% #: When text1 = {source1} , text2 = {source2}");
-      Console.WriteLine($"{i_count} : Result = {return_int}, {maxLength}, {percent}% #");
-      //return_int = (int)percent;
+      Console.WriteLine($"{i_count} : When source1 = {source1} , source2 = {source2}");
+      Console.WriteLine($"{i_count} :       Result = {return_int}, {maxLength}, {percent}% #");
+
       return return_int;
     }
   }
