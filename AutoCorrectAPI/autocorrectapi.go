@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/agnivade/levenshtein"
 	"github.com/gin-gonic/gin"
@@ -19,7 +20,8 @@ import (
 )
 
 // ************ Start: Constant of Application ************//
-const app_version string = "0.7"
+const app_version string = "0.9.230214.01"
+const app_comment string = "Alpha version"
 
 //const prefixExcelCompareFileName = "./Data_Compare_" //.xlsx"
 //************ End: Constant of Application ************//
@@ -59,8 +61,8 @@ type returnCompare struct {
 
 // ************ Start: Variable and declaration of Application ************//
 var i_count int = 0
-var resultPercent float32 = 0.0               //Result oof search in percent
-var original_excelCompareFileName string = "" //read from INI
+var resultPercent float32 = 0.0                 //Result oof search in percent
+const original_excelCompareFileName string = "" //read from INI
 var excelCompareFileName string = ""
 var isInitialized = false // Is initailized
 var executionDir string   // Execution directory
@@ -104,14 +106,11 @@ func initializeVariable() (isInit bool) {
 		return
 	}
 	fmt.Println("Initialization a variables.")
-	original_excelCompareFileName := readINI("config", "excel_compare_filename")
-	fmt.Println("Original Excel Compare Filename: " + original_excelCompareFileName)
-	//excelCompareFileName := strings.Replace(original_excelCompareFileName, "{%TOPIC%}", TopicName, -1)
-	fmt.Println("Excel Compare Filename: " + excelCompareFileName)
 	executionDir = getExecDir()
 
 	fmt.Println("Auto Correct API")
 	fmt.Println("Version: " + app_version)
+	fmt.Println("Comment: " + app_comment)
 	fmt.Println("Execution Path: " + executionDir)
 
 	var api_server_ipaddress string = readINI("server", "api_server_ipaddress")
@@ -133,11 +132,11 @@ func main() {
 	//var ireturnval int = 0
 	//ireturnval = CountRowsExcelCompanyValue()
 	//fmt.Println("ireturnval: ", ireturnval)
-	testGetExcel()
-	//runRestAPI()
+	//testGetExcel()
 
 	//GetExcelCompanyValue("A2")
 	//runTestDistance()
+	runRestAPI()
 }
 
 //************ End: Main function ************//
@@ -197,7 +196,10 @@ func postHello(c *gin.Context) {
 }
 
 func getExcelFileName(inputTopic string) string {
+	original_excelCompareFileName := readINI("config", "excel_compare_filename")
 	excel_filename := strings.Replace(original_excelCompareFileName, "{%TOPIC%}", inputTopic, -1)
+	fmt.Println("Original Excel Compare Filename: " + original_excelCompareFileName)
+	fmt.Println("Excel Compare Filename: " + excelCompareFileName)
 	return excel_filename
 }
 
@@ -245,9 +247,6 @@ func getDistanceCorrect(c *gin.Context) {
 
 func postDistanceCorrect(c *gin.Context) {
 	var inputJson autocorrectAllData
-	//var outputJson autocorrectAllData
-	//outputJson = &inputJson
-	//outputJson.Data = inputJson.Data
 
 	if err := c.BindJSON(&inputJson); err != nil {
 		return
@@ -256,30 +255,23 @@ func postDistanceCorrect(c *gin.Context) {
 	var inputData string = inputJson.Data
 	var inputTopic string = inputJson.Topic
 	var inputMinPercentMatch string = inputJson.MinPercentMatch
-	//var floatMinPercentMatch float64
 	floatMinPercentMatch, _ := strconv.ParseFloat(inputMinPercentMatch, 64)
 
-	//var _ error
-	//value, _ := sjson.Set("", "Topic", inputTopic)
-	//fmt.Println("value = ", value)
-
-	var result_run int
+	var result_distance int = 0
 	var outputJson []autocorrectAllData
 	var result_percent float32 = 0
 	var result_percent_string string
 	var result_message string = ""
+	var local_excel_filename string = ""
+	var isFindDistanceFound bool = false
 
 	//source1 := "kitten"       //source data.
 	source2 := inputJson.Data //input data from client req. //"sitting"
-	var source1Length int
-	var source2Length int
-	var maxLength int = 0
-	var local_excel_filename string = ""
 	i_count = i_count + 1
 
 	// Start ---- 1. Check database file or excel dictionary is Exists
 	local_excel_filename = getExcelFileName(inputTopic)
-	fmt.Println("Check database file or excel dictionary is Exists")
+	//fmt.Println("Check database file or excel dictionary is Exists")
 	if fileExist(local_excel_filename) == false {
 		result_message = "Error. Find Database/Excel not found!"
 		outputJson = []autocorrectAllData{
@@ -300,70 +292,69 @@ func postDistanceCorrect(c *gin.Context) {
 	// Finish ---- 1. Check database file or excel dictionary is Exists
 
 	// Start ---- 2. Compare data in  loop from source vs excel file
-	var i_loop int = 0
 	var axis = ""
-	fmt.Println("First init = ", i_loop)
+	fmt.Println("First init = 0")
+	var current_max_percent_result float32 = 0.0
+
 	var max_loop int = CountRowsExcelCompanyValue(local_excel_filename)
-	for i_loop := 1; i_loop <= max_loop; i_loop++ {
-		axis = fmt.Sprintf("A%d", i_loop)
+	for i_excel_current_row := 1; i_excel_current_row <= max_loop; i_excel_current_row++ {
+		axis = fmt.Sprintf("A%d", i_excel_current_row)
 		source1 := GetExcelCompanyValue(local_excel_filename, axis)
-		//source1 := "kitten" //source data.
-		source1Length = len(source1)
-		source2Length = len(source2)
-		if source1Length >= source2Length {
-			maxLength = source1Length
-		} else {
-			maxLength = source2Length
-		}
 
-		result_run = Calculate(source1, source2)
-
-		result_percent = ToFloat32(maxLength-result_run) / ToFloat32(maxLength) * 100
-		result_percent_string = fmt.Sprintf("%f", result_percent)
-		fmt.Println("[", i_loop, "] DistanceCorrect: of ", source1, ", ", source2, " = ", result_run)
-
-		outputDistanceCorrects = append(outputDistanceCorrects, inputJson)
-
-		outputJson = nil
-
-		// Pass
+		// Clear a variables
 		result_message = ""
+		outputJson = nil
+		result_distance = 0
+		result_percent = 0.0
+
+		fmt.Println("Loop: [", i_excel_current_row, "]: DistanceCorrect: of ", source1, ", ", source2)
+		result_distance, result_percent = CalculateDistance(source1, source2)
+		result_percent_string = fmt.Sprintf("%f", result_percent) //convert to string
+
+		// Condition is pass
 		if result_percent >= float32(floatMinPercentMatch) {
-			result_message = fmt.Sprintf("Success, result = %d ", result_run)
-			outputJson = []autocorrectAllData{
-				{Topic: inputTopic,
-					Data:               inputData,
-					MinPercentMatch:    inputMinPercentMatch,
-					ResultCode:         0, //Success
-					ResultMessage:      result_message,
-					ResultData:         source1,
-					ResultPercentMatch: result_percent_string},
-			}
-			outputDistanceCorrectsLatest = nil
-			outputDistanceCorrectsLatest = outputJson
-			outputDistanceCorrectsLatest = append(outputDistanceCorrectsLatest, inputJson)
-			c.IndentedJSON(http.StatusCreated, outputJson)
-			return
-		} else { //Not pass or not found
-			result_message = "Find data mapping not found"
-			outputJson = []autocorrectAllData{
-				{Topic: inputTopic,
-					Data:               inputData,
-					MinPercentMatch:    inputMinPercentMatch,
-					ResultCode:         -1, //Failure
-					ResultMessage:      result_message,
-					ResultData:         "",
-					ResultPercentMatch: "0"},
+			outputDistanceCorrects = append(outputDistanceCorrects, inputJson)
+			isFindDistanceFound = true
+			result_message = fmt.Sprintf("Found: data distance = %d", result_distance)
+
+			if result_percent > current_max_percent_result {
+				current_max_percent_result = result_percent
+				outputJson = []autocorrectAllData{
+					{Topic: inputTopic,
+						Data:               inputData,
+						MinPercentMatch:    inputMinPercentMatch,
+						ResultCode:         0, //Success
+						ResultMessage:      result_message,
+						ResultData:         source1,
+						ResultPercentMatch: result_percent_string},
+				}
+				outputDistanceCorrectsLatest = nil
+				outputDistanceCorrectsLatest = outputJson
+				//c.IndentedJSON(http.StatusCreated, outputJson)
 			}
 		}
 	}
 	// Finish ---- 2. Compare data in  loop from source vs excel file
 
-	// find not found
-	outputDistanceCorrectsLatest = nil
-	outputDistanceCorrectsLatest = append(outputDistanceCorrectsLatest, inputJson)
-	c.IndentedJSON(http.StatusCreated, outputJson)
-	return
+	if isFindDistanceFound { // find found
+		c.IndentedJSON(http.StatusCreated, outputDistanceCorrectsLatest)
+		return
+	} else { // find not found
+		result_message = "Find data mapping not found"
+		outputJson = []autocorrectAllData{
+			{Topic: inputTopic,
+				Data:               inputData,
+				MinPercentMatch:    inputMinPercentMatch,
+				ResultCode:         -1, //Failure
+				ResultMessage:      result_message,
+				ResultData:         "",
+				ResultPercentMatch: "0"},
+		}
+		outputDistanceCorrectsLatest = nil
+		//outputDistanceCorrectsLatest = append(outputDistanceCorrectsLatest, inputJson)
+		c.IndentedJSON(http.StatusCreated, outputJson)
+		return
+	}
 }
 
 func runRestAPI() {
@@ -391,49 +382,56 @@ func runRestAPI() {
 	router.Run(serverrun)
 }
 
-func runTestDistance() {
-	var resultval int
-	s1 := "kitten"
-	s2 := "sitting"
-	distance := levenshtein.ComputeDistance(s1, s2)
-	fmt.Printf("The distance between %s and %s is %d.\n", s1, s2, distance)
-	resultval = Calculate("kitten", "sitting")
-	resultval = Calculate("มกราคม", "มกรคม")
-	resultval = Calculate("มกราคม", "มกคม")
-	resultval = 0
-	//return resultval
-	fmt.Println("runTestDistance : ", s1, ", ", resultval)
+func runTestDistance() int {
+	var ret_distance int = 0
+	var ret_percent float32 = 0.0
 
-	// Output:
-	// The distance between kitten and sitting is 3.
+	//source1 := "kitten"
+	//source2 := "sitting"
+	//distance := levenshtein.ComputeDistance(source1, source2)
+	//fmt.Printf("The distance between %s and %s is %d.\n", source1, source2, distance)
+	ret_distance, ret_percent = CalculateDistance("kitten", "sitting")
+	fmt.Printf("The distance between %s and %s is %d and %f.\n", "kitten", "sitting", ret_distance, ret_percent)
+	ret_distance, ret_percent = CalculateDistance("มกราคม", "มกรคม")
+	fmt.Printf("The distance between %s and %s is %d and %f.\n", "มกราคม", "มกรคม", ret_distance, ret_percent)
+	ret_distance, ret_percent = CalculateDistance("มกราคม", "มกคม")
+	fmt.Printf("The distance between %s and %s is %d and %f.\n", "มกราคม", "มกคม", ret_distance, ret_percent)
+	return 0
 }
 
-func Calculate(source1 string, source2 string) int {
-	var result_run int = 0
+func CalculateDistance(source1 string, source2 string) (distance int, percent float32) {
+	//var result_run int = 0
 	var source1Length int
 	var source2Length int
 	var maxLength int = 0
 
-	source1Length = len(source1)
-	source2Length = len(source2)
-
 	i_count = i_count + 1
+	resultPercent = 0
+	distance = 0
+
+	fmt.Println("--------------------------------------------------------------------------------------")
+	fmt.Println(i_count, " : Calculation UTF8 Distance of: source1 = ", source1, ", source2 = ", source2)
+
+	// Length of UTF-8 encoded string
+	source1Length = utf8.RuneCountInString(source1) //len(source1)
+	source2Length = utf8.RuneCountInString(source2) //len(source2)
+	//fmt.Printf("Length source1: %d\n", source1Length)
+	//fmt.Printf("Length source2: %d\n", source2Length)
+
 	if source1Length >= source2Length {
 		maxLength = source1Length
 	} else {
 		maxLength = source2Length
 	}
 
-	resultPercent = 0
-	result_run = levenshtein.ComputeDistance(source1, source2)
-
-	resultPercent = ToFloat32(maxLength-result_run) / ToFloat32(maxLength) * 100
+	distance = levenshtein.ComputeDistance(source1, source2)
+	resultPercent = ToFloat32(maxLength-distance) / ToFloat32(maxLength) * 100
 
 	fmt.Println(i_count, " : When data : source1 = ", source1, ", source2 = ", source2)
-	fmt.Println(i_count, " :              Result = ", result_run, ", ", maxLength, ", ", resultPercent, " %")
+	fmt.Println(i_count, " :             distance = ", distance, ", maxchar = ", maxLength, ", percent = ", resultPercent, " %")
 	//fmt.Printf("%d : Result = %d, %d, %f %% #", i_count, return_int, maxLength, percent)
 
-	return result_run
+	return distance, resultPercent
 }
 
 //************ End: Function declaration ************//
