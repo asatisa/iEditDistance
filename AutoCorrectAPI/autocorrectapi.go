@@ -1,9 +1,14 @@
+// Title: Auto Correct API
+// Filename: AutoCorrectAPI.go
+// Editor: Atthapol.w
+// Update: 2023-02-14 Valentine's day.
 package main
 
 import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/agnivade/levenshtein"
 	"github.com/gin-gonic/gin"
@@ -13,11 +18,13 @@ import (
 	//"github.com/xuri/excelize"
 )
 
-// Constant of Application
+// ************ Start: Constant of Application ************//
 const app_version string = "0.7"
-const company_filename = "./Data_Topic_Company.xlsx"
 
-// Structure
+//const prefixExcelCompareFileName = "./Data_Compare_" //.xlsx"
+//************ End: Constant of Application ************//
+
+// ************ Start: Structure of Application ************//
 type mappingValue struct {
 	KEY   string `json:"KEY"`
 	Value string `json:"Value"`
@@ -43,9 +50,20 @@ type autocorrectAllData struct {
 	ResultPercentMatch string `json:"ResultPercentMatch"`
 }
 
-// Variable of Application
+type returnCompare struct {
+	ResultData         string
+	ResultPercentMatch float32
+}
+
+//************ End: Structure of Application ************//
+
+// ************ Start: Variable and declaration of Application ************//
 var i_count int = 0
-var result_percent float32
+var resultPercent float32 = 0.0               //Result oof search in percent
+var original_excelCompareFileName string = "" //read from INI
+var excelCompareFileName string = ""
+var isInitialized = false // Is initailized
+var executionDir string   // Execution directory
 
 var version = []mappingValue{
 	{KEY: "Version", Value: app_version},
@@ -60,24 +78,96 @@ var autoCorrects = []autocorrectAllData{
 	{Topic: "TAXID-สัญญารายย่อย", Data: "1999892001002", MinPercentMatch: "90"},
 	{Topic: "เลขที่บัตรประชาชน", Data: "1999892001002", MinPercentMatch: "80"},
 }
+
 var inputDistanceCorrects = []autocorrectInput{
 	{Topic: "ชื่อบริษัท", Data: "sitting", MinPercentMatch: "80"},
 }
+
 var outputDistanceCorrects = []autocorrectAllData{
 	{Topic: "ชื่อบริษัท", Data: "sitting", MinPercentMatch: "80", ResultCode: 0, ResultMessage: "Success", ResultData: "sitting", ResultPercentMatch: "80"},
 }
+
 var outputDistanceCorrectsLatest = []autocorrectAllData{
 	{Topic: "ชื่อบริษัท", Data: "sitting", MinPercentMatch: "80", ResultCode: 0, ResultMessage: "Success", ResultData: "sitting", ResultPercentMatch: "80"},
 }
 
-// Function declaration
+//************ End: Variable and declaration of Application ************//
+
+// ************ Start: Function declaration and initialization ************//
 func getVersion(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, version)
 }
 
+func initializeVariable() (isInit bool) {
+	if isInitialized == true {
+		isInit = isInitialized
+		return
+	}
+	fmt.Println("Initialization a variables.")
+	original_excelCompareFileName := readINI("config", "excel_compare_filename")
+	fmt.Println("Original Excel Compare Filename: " + original_excelCompareFileName)
+	//excelCompareFileName := strings.Replace(original_excelCompareFileName, "{%TOPIC%}", TopicName, -1)
+	fmt.Println("Excel Compare Filename: " + excelCompareFileName)
+	executionDir = getExecDir()
+
+	fmt.Println("Auto Correct API")
+	fmt.Println("Version: " + app_version)
+	fmt.Println("Execution Path: " + executionDir)
+
+	var api_server_ipaddress string = readINI("server", "api_server_ipaddress")
+	var api_server_port string = readINI("server", "api_server_port")
+	var serverrun string = api_server_ipaddress + ":" + api_server_port
+	fmt.Println("serverrun: " + serverrun)
+
+	isInitialized = true
+	isInit = isInitialized
+	return
+}
+
+//************ End: Function declaration and initialization ************//
+
+// ************ Start: Main function ************//
+func main() {
+	initializeVariable()
+
+	//var ireturnval int = 0
+	//ireturnval = CountRowsExcelCompanyValue()
+	//fmt.Println("ireturnval: ", ireturnval)
+	testGetExcel()
+	//runRestAPI()
+
+	//GetExcelCompanyValue("A2")
+	//runTestDistance()
+}
+
+//************ End: Main function ************//
+
+// ************ Start: Test function ************//
+func testGetExcel() string {
+	initializeVariable()
+	excel_filename := strings.Replace(original_excelCompareFileName, "{%TOPIC%}", "ชื่อบริษัท", -1)
+	f, err := excelize.OpenFile(excel_filename)
+	if err != nil {
+		fmt.Println(err)
+		return "N_A"
+	}
+
+	cellVal := f.GetCellValue("Sheet1", "A1")
+	if err != nil {
+		fmt.Println(err)
+		return cellVal
+	}
+	fmt.Println("celvalue = " + cellVal)
+	return cellVal
+}
+
+//************ End: Test function ************//
+
+// ************ Start: Function declaration ************//
 func getAutoCorrect(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, autoCorrects)
 }
+
 func postAutoCorrect(c *gin.Context) {
 	var newInput autocorrectAllData
 
@@ -93,6 +183,7 @@ func postAutoCorrect(c *gin.Context) {
 func getHello(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, helloworld)
 }
+
 func postHello(c *gin.Context) {
 	var newInput mappingValue
 
@@ -105,24 +196,13 @@ func postHello(c *gin.Context) {
 	c.IndentedJSON(http.StatusCreated, helloworld)
 }
 
-func testGetExcel() string {
-	f, err := excelize.OpenFile(company_filename)
-	if err != nil {
-		fmt.Println(err)
-		return "N_A"
-	}
-	//
-	cellVal := f.GetCellValue("Sheet1", "A1")
-	if err != nil {
-		fmt.Println(err)
-		return cellVal
-	}
-	fmt.Println("celvalue = " + cellVal)
-	return cellVal
+func getExcelFileName(inputTopic string) string {
+	excel_filename := strings.Replace(original_excelCompareFileName, "{%TOPIC%}", inputTopic, -1)
+	return excel_filename
 }
 
-func GetExcelCompanyValue(axis string) string {
-	f, err := excelize.OpenFile(company_filename)
+func GetExcelCompanyValue(excel_filename string, axis string) string {
+	f, err := excelize.OpenFile(excel_filename)
 	if err != nil {
 		fmt.Println(err)
 		return "N_A"
@@ -134,8 +214,8 @@ func GetExcelCompanyValue(axis string) string {
 	return cellVal
 }
 
-func CountRowsExcelCompanyValue() int {
-	f, err := excelize.OpenFile(company_filename)
+func CountRowsExcelCompanyValue(excel_filename string) int {
+	f, err := excelize.OpenFile(excel_filename)
 	if err != nil {
 		fmt.Println(err)
 		return -1
@@ -158,9 +238,11 @@ func CountRowsExcelCompanyValue() int {
 func getDistanceCorrectLatest(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, outputDistanceCorrectsLatest)
 }
+
 func getDistanceCorrect(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, outputDistanceCorrects)
 }
+
 func postDistanceCorrect(c *gin.Context) {
 	var inputJson autocorrectAllData
 	//var outputJson autocorrectAllData
@@ -192,11 +274,13 @@ func postDistanceCorrect(c *gin.Context) {
 	var source1Length int
 	var source2Length int
 	var maxLength int = 0
-
+	var local_excel_filename string = ""
 	i_count = i_count + 1
 
-	/// Start ---- Check File is Exists
-	if fileExist(company_filename) == false {
+	// Start ---- 1. Check database file or excel dictionary is Exists
+	local_excel_filename = getExcelFileName(inputTopic)
+	fmt.Println("Check database file or excel dictionary is Exists")
+	if fileExist(local_excel_filename) == false {
 		result_message = "Error. Find Database/Excel not found!"
 		outputJson = []autocorrectAllData{
 			{Topic: inputTopic,
@@ -207,20 +291,22 @@ func postDistanceCorrect(c *gin.Context) {
 				ResultData:         "",
 				ResultPercentMatch: "0"},
 		}
+		fmt.Println("Error! " + result_message)
 		outputDistanceCorrectsLatest = nil
 		outputDistanceCorrectsLatest = append(outputDistanceCorrectsLatest, inputJson)
 		c.IndentedJSON(http.StatusCreated, outputJson)
-		return
+		return //exit function
 	}
-	/// Finish ---- Check File is Exists
+	// Finish ---- 1. Check database file or excel dictionary is Exists
 
+	// Start ---- 2. Compare data in  loop from source vs excel file
 	var i_loop int = 0
 	var axis = ""
 	fmt.Println("First init = ", i_loop)
-	var max_loop int = CountRowsExcelCompanyValue()
+	var max_loop int = CountRowsExcelCompanyValue(local_excel_filename)
 	for i_loop := 1; i_loop <= max_loop; i_loop++ {
 		axis = fmt.Sprintf("A%d", i_loop)
-		source1 := GetExcelCompanyValue(axis)
+		source1 := GetExcelCompanyValue(local_excel_filename, axis)
 		//source1 := "kitten" //source data.
 		source1Length = len(source1)
 		source2Length = len(source2)
@@ -254,6 +340,7 @@ func postDistanceCorrect(c *gin.Context) {
 					ResultPercentMatch: result_percent_string},
 			}
 			outputDistanceCorrectsLatest = nil
+			outputDistanceCorrectsLatest = outputJson
 			outputDistanceCorrectsLatest = append(outputDistanceCorrectsLatest, inputJson)
 			c.IndentedJSON(http.StatusCreated, outputJson)
 			return
@@ -270,6 +357,8 @@ func postDistanceCorrect(c *gin.Context) {
 			}
 		}
 	}
+	// Finish ---- 2. Compare data in  loop from source vs excel file
+
 	// find not found
 	outputDistanceCorrectsLatest = nil
 	outputDistanceCorrectsLatest = append(outputDistanceCorrectsLatest, inputJson)
@@ -324,6 +413,7 @@ func Calculate(source1 string, source2 string) int {
 	var source1Length int
 	var source2Length int
 	var maxLength int = 0
+
 	source1Length = len(source1)
 	source2Length = len(source2)
 
@@ -334,38 +424,16 @@ func Calculate(source1 string, source2 string) int {
 		maxLength = source2Length
 	}
 
-	result_percent = 0
+	resultPercent = 0
 	result_run = levenshtein.ComputeDistance(source1, source2)
 
-	result_percent = ToFloat32(maxLength-result_run) / ToFloat32(maxLength) * 100
+	resultPercent = ToFloat32(maxLength-result_run) / ToFloat32(maxLength) * 100
 
 	fmt.Println(i_count, " : When data : source1 = ", source1, ", source2 = ", source2)
-	fmt.Println(i_count, " :              Result = ", result_run, ", ", maxLength, ", ", result_percent, " %")
+	fmt.Println(i_count, " :              Result = ", result_run, ", ", maxLength, ", ", resultPercent, " %")
 	//fmt.Printf("%d : Result = %d, %d, %f %% #", i_count, return_int, maxLength, percent)
 
 	return result_run
 }
 
-// //////////////////////////////////////////////////////////////////////////////////////////////////////
-// Main function
-// //////////////////////////////////////////////////////////////////////////////////////////////////////
-func main() {
-	var return_path string
-
-	return_path = getExecDir()
-	fmt.Println("Auto Correct API")
-	fmt.Println("Version: " + app_version)
-	fmt.Println("Execution Path: " + return_path)
-
-	var api_server_ipaddress string = readINI("server", "api_server_ipaddress")
-	var api_server_port string = readINI("server", "api_server_port")
-	var serverrun string = api_server_ipaddress + ":" + api_server_port
-	fmt.Println("serverrun: " + serverrun)
-
-	//var ireturnval int = 0
-	//ireturnval = CountRowsExcelCompanyValue()
-	//fmt.Println("ireturnval: ", ireturnval)
-	runRestAPI()
-	//GetExcelCompanyValue("A2")
-	//runTestDistance()
-}
+//************ End: Function declaration ************//

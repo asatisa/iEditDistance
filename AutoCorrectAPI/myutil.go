@@ -24,7 +24,7 @@ func getExecDir() (exPath string) {
 }
 
 func readINI(section string, key string) (value string) {
-	initializeModule()
+	initializeMyUtil()
 	//var err error
 	file, err := ini.LoadFile(AppIni)
 	if err != nil {
@@ -45,6 +45,7 @@ func fileExists(filename string) bool {
 	return !info.IsDir()
 }
 
+// Check file is exist.
 func fileExist(filename string) bool {
 	if _, err := os.Stat(filename); err == nil {
 		//fmt.Printf("File '" + filename + "' exists\n")
@@ -58,7 +59,7 @@ func fileExist(filename string) bool {
 // //////////////////////////////////////////////////////////////////////////////////////////////////////
 // Initialization modules
 // /////////////////////////////////////////////////////////////////////////////////////////////////////
-func initializeModule() bool {
+func initializeMyUtil() bool {
 	//fmt.Println("Init: " + strconv.FormatBool(isInitialize))
 	if isInitialize {
 		return true
