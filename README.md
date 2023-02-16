@@ -6,3 +6,6 @@ Referece Doc:
 https://gist.github.com/Davidblkx/e12ab0bb2aff7fd8072632b396538560
 
 https://stackoverflow.com/questions/9453731/how-to-calculate-distance-similarity-measure-of-given-2-strings
+
+[Update]
+2023-02-16: * Move AutoCorrectAPI to "https://github.com/asatisa/OCRAutoCorrect.git"
